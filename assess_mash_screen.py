@@ -58,8 +58,7 @@ def get_top_hits(mash_hits, min_identity=0.85, min_shared_hashes_threshold=0.10)
     sorted_mash_hits = sorted(mash_hits, key=lambda h: h.identity, reverse=True)
     best_hit_hash_proportion = sorted_mash_hits[0].shared_hashes[0] 
 
-    logging.debug("Highest identity match: %s", sorted_mash_hits[0].identity)
-    logging.debug("Hash proportion of best match: %s", best_hit_hash_proportion)
+    logging.debug("Best match: %s", sorted_mash_hits[0])
     for hit in sorted_mash_hits:
         pass_identity = hit.identity > min_identity
         pass_hash_proportion = hit.shared_hashes[0] > min_shared_hashes_threshold * best_hit_hash_proportion
