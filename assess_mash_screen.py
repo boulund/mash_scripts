@@ -105,12 +105,13 @@ def determine_same_species(hits):
 if __name__ == "__main__":
     args = parse_args()
     top_hits = list(get_top_hits(parse_screen(args.screen)))
-    same_species, found_species = determine_same_species(top_hits)
-    if same_species:
+    single_species, found_species = determine_same_species(top_hits)
+    if single_species:
         print("The sample probably consist of only a single species: {}".format(list(found_species)[0]))
         exit(0)
     else:
-        print("Found more than one species!")
+        print("WARNING: The sample likely contains more than one species: ", end="")
+        print(", ".join(name for name in found_species))
         for hit in top_hits: 
             print("\t".join(map(str, hit)))
         exit(1)
