@@ -4,32 +4,47 @@ Assess MASH screening results.
 """
 __author__ = "Fredrik Boulund"
 __date__ = "2017"
+__version__ = "0.1b"
 
 from sys import argv, exit
 from collections import namedtuple
 import argparse
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
-
 MashHit = namedtuple("MashHit", "identity shared_hashes median_multiplicity p_value query comment".split())
 
 def parse_args():
 
-    copyright = "Copyright (c) {year} {author}".format(year=__date__, author=__author__)
-    parser = argparse.ArgumentParser(description=__doc__,
-            epilog=copyright)
+    desc = "{desc} Copyright (c) {year} {author}.".format(desc=__doc__, year=__date__, author=__author__)
+    epilog = "{doc}Version {ver}.".format(doc=__doc__, ver=__version__)
+    parser = argparse.ArgumentParser(description=desc, epilog=epilog)
     parser.add_argument("screen", 
             help="MASH screen output.")
     parser.add_argument("-o", "--outfile", metavar="FILENAME", 
             default="mash_screen_assessment.txt", 
             help="Output filename [%(default)s].")
 
+    dev = parser.add_argument_group("Developer options")
+    dev.add_argument("--loglevel", 
+            choices=["INFO","DEBUG"],
+            default="INFO",
+            help="Set logging level [%(default)s].")
+
     if len(argv) < 2:
         parser.print_help()
         exit(1)
 
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    # Configure logging
+    if args.loglevel == "INFO":
+        loglevel = logging.INFO
+    else:
+        loglevel = logging.DEBUG
+
+    logging.basicConfig(level=loglevel)
+
+    return args 
 
 
 def parse_screen(screen_file):
