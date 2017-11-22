@@ -81,7 +81,7 @@ def get_top_hits(mash_hits, min_identity=0.85, min_shared_hashes_threshold=0.10)
             yield hit
 
 
-def same_species(hits):
+def determine_same_species(hits):
     """
     Determine if hits are from the same species.
     """
@@ -96,14 +96,21 @@ def same_species(hits):
         found_species.add(" ".join(splithit.split()[1:3]))
 
     if len(found_species) > 1:
-        print("Found more than one species! {}".format(found_species))
+        return False, found_species
     else:
-        print("The sample probably consist of only a single species: {}".format(list(found_species)[0]))
+        return True, found_species
+
 
 
 if __name__ == "__main__":
     args = parse_args()
-    top_hits = get_top_hits(parse_screen(args.screen))
-    same_species(top_hits)
-
-
+    top_hits = list(get_top_hits(parse_screen(args.screen)))
+    same_species, found_species = determine_same_species(top_hits)
+    if same_species:
+        print("The sample probably consist of only a single species: {}".format(list(found_species)[0]))
+        exit(0)
+    else:
+        print("Found more than one species!")
+        for hit in top_hits: 
+            print("\t".join(map(str, hit)))
+        exit(1)
