@@ -4,7 +4,7 @@ Assess MASH screening results.
 """
 __author__ = "Fredrik Boulund"
 __date__ = "2017"
-__version__ = "0.1b"
+__version__ = "0.2b"
 
 from sys import argv, exit
 from collections import namedtuple
@@ -20,9 +20,19 @@ def parse_args():
     parser = argparse.ArgumentParser(description=desc, epilog=epilog)
     parser.add_argument("screen", 
             help="MASH screen output.")
+    parser.add_argument("-m", "--min-identity", metavar="ID", type=float,
+            default=0.85,
+            help="Minimum identity [%(default)s].")
+    parser.add_argument("-H", "--min-hashes", metavar="P", type=float,
+            default=0.10,
+            help="Minimum shared hash proportion (relative to top hit) [%(default)s].")
     parser.add_argument("-o", "--outfile", metavar="FILENAME", 
             default="mash_screen_assessment.txt", 
             help="Output filename [%(default)s].")
+    parser.add_argument("-i", "--ignore", metavar="STRING", dest="ignore",
+            default="phage,plasmid",
+            help="Ignore matches to genomes containing STRING "
+                 "(multiple strings can be separated by comma) [%(default)s].")
 
     dev = parser.add_argument_group("Developer options")
     dev.add_argument("--loglevel", 
@@ -81,7 +91,7 @@ def get_top_hits(mash_hits, min_identity=0.85, min_shared_hashes_threshold=0.10)
             yield hit
 
 
-def determine_same_species(hits):
+def determine_same_species(hits, ignore_set):
     """
     Determine if hits are from the same species.
     """
@@ -89,6 +99,9 @@ def determine_same_species(hits):
         hits = list(hits)
     found_species = set()
     for hit in hits:
+        for ignore_string in ignore_set:
+            if ignore_string in hit.comment:
+                continue
         if hit.comment.startswith("["):
             splithit = hit.comment.split("]")[1]
         else:
@@ -104,8 +117,12 @@ def determine_same_species(hits):
 
 if __name__ == "__main__":
     args = parse_args()
-    top_hits = list(get_top_hits(parse_screen(args.screen)))
-    single_species, found_species = determine_same_species(top_hits)
+    ignore_set = set(args.ignore.split(","))
+    top_hits = list(get_top_hits(parse_screen(args.screen), 
+                                 min_identity=args.min_identity, 
+                                 min_shared_hashes_threshold=args.min_hashes,
+                                 ))
+    single_species, found_species = determine_same_species(top_hits, ignore_set=ignore_set)
     if single_species:
         print("The sample probably consist of only a single species: {}".format(list(found_species)[0]))
         exit(0)
