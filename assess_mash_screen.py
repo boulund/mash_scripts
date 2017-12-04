@@ -4,9 +4,9 @@ Assess MASH screening results.
 """
 __author__ = "Fredrik Boulund"
 __date__ = "2017"
-__version__ = "0.2b"
+__version__ = "0.3b"
 
-from sys import argv, exit
+from sys import argv, exit, stdout
 from collections import namedtuple
 import argparse
 import logging
@@ -26,13 +26,13 @@ def parse_args():
     parser.add_argument("-H", "--min-hashes", metavar="P", type=float,
             default=0.10,
             help="Minimum shared hash proportion (relative to top hit) [%(default)s].")
-    parser.add_argument("-o", "--outfile", metavar="FILENAME", 
-            default="mash_screen_assessment.txt", 
-            help="Output filename [%(default)s].")
     parser.add_argument("-i", "--ignore", metavar="STRING", dest="ignore",
             default="phage,plasmid",
             help="Ignore matches to genomes containing STRING "
                  "(multiple strings can be separated by comma) [%(default)s].")
+    parser.add_argument("-o", "--outfile", metavar="FILENAME", 
+            default="", 
+            help="Output filename [%(default)s].")
 
     dev = parser.add_argument_group("Developer options")
     dev.add_argument("--loglevel", 
@@ -123,12 +123,16 @@ if __name__ == "__main__":
                                  min_shared_hashes_threshold=args.min_hashes,
                                  ))
     single_species, found_species = determine_same_species(top_hits, ignore_set=ignore_set)
+    if args.outfile:
+        outfile = open(args.outfile, 'w')
+    else:
+        outfile = stdout
     if single_species:
-        print("The sample probably consist of only a single species: {}".format(list(found_species)[0]))
+        print("The sample probably consist of only a single species: {}".format(list(found_species)[0]), file=outfile)
         exit(0)
     else:
-        print("WARNING: The sample likely contains more than one species: ", end="")
-        print(", ".join(name for name in found_species))
+        print("WARNING: The sample likely contains more than one species: ", end="", file=outfile)
+        print(", ".join(name for name in found_species), file=outfile)
         for hit in top_hits: 
-            print("\t".join(map(str, hit)))
+            print("\t".join(map(str, hit)), file=outfile)
         exit(1)
