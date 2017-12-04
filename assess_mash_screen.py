@@ -4,7 +4,7 @@ Assess MASH screening results.
 """
 __author__ = "Fredrik Boulund"
 __date__ = "2017"
-__version__ = "0.3b"
+__version__ = "0.3.1b"
 
 from sys import argv, exit, stdout
 from collections import namedtuple
@@ -99,9 +99,9 @@ def determine_same_species(hits, ignore_set):
         hits = list(hits)
     found_species = set()
     for hit in hits:
-        for ignore_string in ignore_set:
-            if ignore_string in hit.comment:
-                continue
+        ignore_matches = [ignore_string in hit.comment for ignore_string in ignore_set]
+        if any(ignore_matches):
+            continue
         if hit.comment.startswith("["):
             splithit = hit.comment.split("]")[1]
         else:
