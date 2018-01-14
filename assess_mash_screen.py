@@ -4,14 +4,14 @@ Assess MASH screening results.
 """
 __author__ = "Fredrik Boulund"
 __date__ = "2017"
-__version__ = "0.3.1b"
+__version__ = "0.4.0b"
 
 from sys import argv, exit, stdout
 from collections import namedtuple
 import argparse
 import logging
 
-MashHit = namedtuple("MashHit", "identity shared_hashes median_multiplicity p_value query comment".split())
+MashHit = namedtuple("MashHit", "identity shared_hashes median_multiplicity p_value query comment classification_score".split())
 
 def parse_args():
 
@@ -23,9 +23,10 @@ def parse_args():
     parser.add_argument("-m", "--min-identity", metavar="ID", type=float,
             default=0.85,
             help="Minimum identity [%(default)s].")
-    parser.add_argument("-H", "--min-hashes", metavar="P", type=float,
-            default=0.10,
-            help="Minimum shared hash proportion (relative to top hit) [%(default)s].")
+    parser.add_argument("-c", "--classification-score-threshold-modifier", 
+            metavar="c", type=float, dest="modifier",
+            default=0.15,
+            help="Minimum classification score is computed as the classification score of the top ranking hit minus the modifier [%(default)s].")
     parser.add_argument("-i", "--ignore", metavar="STRING", dest="ignore",
             default="phage,plasmid",
             help="Ignore matches to genomes containing STRING "
@@ -61,33 +62,36 @@ def parse_screen(screen_file):
     with open(screen_file) as f:
         for line_number, line in enumerate(f, start=1):
             try:
-                (identity, shared_hashes, median_multiplicity, 
+                (identity, shared_hashes_pair, median_multiplicity, 
                         p_value, query, comment) = line.strip().split("\t")
+                shared_hashes, total_hashes = map(int, shared_hashes_pair.split("/"))
+                classification_score = float(identity) * (shared_hashes / total_hashes)
                 mash_hit = MashHit(float(identity), 
-                                   tuple(map(int, shared_hashes.split("/"))),
+                                   (shared_hashes, total_hashes),
                                    int(median_multiplicity),
                                    float(p_value),
                                    query,
-                                   comment)
+                                   comment,
+                                   classification_score)
 
             except ValueError:
                 log.error("Could not parse line %s:\n %s", line_number, line)
             yield mash_hit
 
 
-def get_top_hits(mash_hits, min_identity=0.85, min_shared_hashes_threshold=0.10):
+def get_top_hits(mash_hits, min_identity=0.85, classification_score_threshold_factor=0.15):
     """
     Yield top ranked MASH screen hits.
     """
 
-    sorted_mash_hits = sorted(mash_hits, key=lambda h: h.identity, reverse=True)
-    best_hit_hash_proportion = sorted_mash_hits[0].shared_hashes[0] 
+    sorted_mash_hits = sorted(mash_hits, key=lambda h: h.classification_score, reverse=True)
+    classification_score_threshold = sorted_mash_hist[0].classification_score - classification_score_threshold_factor
 
     logging.debug("Best match: %s", sorted_mash_hits[0])
     for hit in sorted_mash_hits:
         pass_identity = hit.identity > min_identity
-        pass_hash_proportion = hit.shared_hashes[0] > min_shared_hashes_threshold * best_hit_hash_proportion
-        if pass_identity and pass_hash_proportion:
+        pass_classification_score = hit.classification_score >= classification_score_threshold
+        if pass_identity and pass_classification_score:
             yield hit
 
 
@@ -120,7 +124,7 @@ if __name__ == "__main__":
     ignore_set = set(args.ignore.split(","))
     top_hits = list(get_top_hits(parse_screen(args.screen), 
                                  min_identity=args.min_identity, 
-                                 min_shared_hashes_threshold=args.min_hashes,
+                                 classification_score_threshold_factor=args.modifier,
                                  ))
     single_species, found_species = determine_same_species(top_hits, ignore_set=ignore_set)
     if args.outfile:
