@@ -10,6 +10,7 @@ from sys import argv, exit, stdout
 from collections import namedtuple
 import argparse
 import logging
+import os
 
 MashHit = namedtuple("MashHit", "identity shared_hashes median_multiplicity p_value query comment classification_score".split())
 
@@ -85,7 +86,7 @@ def get_top_hits(mash_hits, min_identity=0.85, classification_score_threshold_fa
     """
 
     sorted_mash_hits = sorted(mash_hits, key=lambda h: h.classification_score, reverse=True)
-    classification_score_threshold = sorted_mash_hist[0].classification_score - classification_score_threshold_factor
+    classification_score_threshold = sorted_mash_hits[0].classification_score - classification_score_threshold_factor
 
     logging.debug("Best match: %s", sorted_mash_hits[0])
     for hit in sorted_mash_hits:
@@ -121,6 +122,7 @@ def determine_same_species(hits, ignore_set):
 
 if __name__ == "__main__":
     args = parse_args()
+    sample_name = os.path.basename(args.screen).split(".")[0]
     ignore_set = set(args.ignore.split(","))
     top_hits = list(get_top_hits(parse_screen(args.screen), 
                                  min_identity=args.min_identity, 
@@ -132,11 +134,11 @@ if __name__ == "__main__":
     else:
         outfile = stdout
     if single_species:
-        print("The sample probably consist of only a single species: {}".format(list(found_species)[0]), file=outfile)
+        print("Sample '{}' probably consist of only a single species: {}".format(sample_name, list(found_species)[0]), file=outfile)
         exit(0)
     else:
-        print("WARNING: The sample likely contains more than one species: ", end="", file=outfile)
+        print("WARNING: Sample '{}' likely contains more than one species: ".format(sample_name), end="", file=outfile)
         print(", ".join(name for name in found_species), file=outfile)
         for hit in top_hits: 
             print("\t".join(map(str, hit)), file=outfile)
-        exit(1)
+        exit(2)
