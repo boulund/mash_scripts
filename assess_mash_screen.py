@@ -93,7 +93,10 @@ def get_top_hits(mash_hits, min_identity=0.85, classification_score_threshold_fa
         pass_identity = hit.identity > min_identity
         pass_classification_score = hit.classification_score >= classification_score_threshold
         if pass_identity and pass_classification_score:
+            logging.debug("%s passed classification. min_identity=%s, classification_score_threshold=%s", hit, min_identity, classification_score_threshold)
             yield hit
+        else:
+            logging.debug("%s failed classification. min_identity=%s, classification_score_threshold=%s", hit, min_identity, classification_score_threshold)
 
 
 def determine_same_species(hits, ignore_set):
