@@ -26,7 +26,7 @@ def parse_args():
             help="Minimum identity [%(default)s].")
     parser.add_argument("-c", "--classification-score-threshold-modifier", 
             metavar="c", type=float, dest="modifier",
-            default=0.15,
+            default=0.20,
             help="Minimum classification score is computed as the classification score of the top ranking hit minus the modifier [%(default)s].")
     parser.add_argument("-i", "--ignore", metavar="STRING", dest="ignore",
             default="phage,plasmid",
@@ -134,11 +134,9 @@ if __name__ == "__main__":
     else:
         outfile = stdout
     if single_species:
-        print("Sample '{}' probably consist of only a single species: {}".format(sample_name, list(found_species)[0]), file=outfile)
+        print("{}\t{}\t{}".format(sample_name, "PASS", list(found_species)[0]), file=outfile)
         exit(0)
     else:
-        print("WARNING: Sample '{}' likely contains more than one species: ".format(sample_name), end="", file=outfile)
-        print(", ".join(name for name in found_species), file=outfile)
-        for hit in top_hits: 
-            print("\t".join(map(str, hit)), file=outfile)
+        multiple_species_names = ", ".join(name for name in found_species)
+        print("{}\t{}\t{}".format(sample_name, "FAIL", multiple_species_names), file=outfile)
         exit(2)
