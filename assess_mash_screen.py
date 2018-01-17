@@ -29,7 +29,7 @@ def parse_args():
             default=0.20,
             help="Minimum classification score is computed as the classification score of the top ranking hit minus the modifier [%(default)s].")
     parser.add_argument("-i", "--ignore", metavar="STRING", dest="ignore",
-            default="phage,plasmid",
+            default="phage,plasmid,virus",
             help="Ignore matches to genomes containing STRING "
                  "(multiple strings can be separated by comma) [%(default)s].")
     parser.add_argument("-o", "--outfile", metavar="FILENAME", 
